@@ -16,6 +16,8 @@ interface IProps {
   onDelete?: (id: Key) => void
 }
 
+const INPUT_ID = 'inputId'
+
 const App = ({ onEdit, onCreate, onDelete }: IProps) => {
   const [isInputShow, toggleInputShow] = useState(false)
   const [lineList, setLineList] = useState<ILeafNode[]>([])
@@ -91,8 +93,15 @@ const App = ({ onEdit, onCreate, onDelete }: IProps) => {
     onDelete && onDelete(key)
   }
 
-  const handleTreeNodeSelect = (selectedKeys: (string | number)[]) => {
-    setSelectedKeys(selectedKeys)
+  const handleTreeNodeSelect = (
+    selectedKeys: (string | number)[],
+    info?: { nativeEvent: MouseEvent }
+  ) => {
+    const inputId: any = (info?.nativeEvent?.target as HTMLInputElement)?.id
+    // 防止选中input所在的节点
+    if (inputId !== INPUT_ID) {
+      setSelectedKeys(selectedKeys)
+    }
   }
 
   const handleExpand = (expandedKeys: Key[]) => {
@@ -143,6 +152,7 @@ const App = ({ onEdit, onCreate, onDelete }: IProps) => {
         </div>
       ) : (
         <Input
+          id={INPUT_ID}
           ref={inputNode}
           placeholder="请输入小组名"
           onPressEnter={({ currentTarget }) => {
@@ -163,6 +173,7 @@ const App = ({ onEdit, onCreate, onDelete }: IProps) => {
           key: idx - 1000000,
           title: (
             <Input
+              id={INPUT_ID}
               ref={inputNode}
               onBlur={({ currentTarget }) => {
                 handleLeafCreate(currentTarget.value, parentId)
