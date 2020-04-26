@@ -134,7 +134,7 @@ const toggleLeafCreate = (key: Key, isCreate: boolean) => {
 - 获取新插入的 input 节点使其 focus
   解决方案：一开始这里我是使用 useRef + settimeout 延迟 200ms 后 focus 的方案，但是因为 settimeout 的不确定性，我决定采用其他方案。
 
-这里才用了推荐官方的方案：
+这里采用了官方推荐的方案：
 
 ```javascript
 const inputNode = useCallback(
@@ -258,3 +258,7 @@ const renderTree: any = (
       : tree
   }
 ```
+
+## 最后
+
+代码放在 github，地址是 [editable-tree](https://github.com/BovineBoy/editable-tree)，欢迎参考，如果对你有所帮助，希望可以点个star，如果有疑问欢迎在[这里](https://github.com/BovineBoy/editable-tree/issues)提issue，或留言讨论。
