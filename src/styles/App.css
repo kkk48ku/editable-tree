@@ -1,0 +1,58 @@
+@import '~antd/dist/antd.css';
+
+.App {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 600px;
+  box-shadow: 2px 8px 30px 0 rgba(115, 119, 139, 0.2);
+}
+
+.ant-tree-list {
+  padding: 16px 0;
+}
+
+.ant-tree .ant-tree-treenode {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 16px;
+  color: #31415f;
+}
+
+.tree-leaf .action {
+  margin-left: 16px;
+  display: none;
+}
+
+.tree-leaf:hover .action {
+  display: block;
+}
+
+.tree-leaf .action .icon {
+  margin-right: 4px;
+}
+
+.tree-leaf .action .icon:nth-last-child(1) {
+  margin-right: 0;
+}
+
+.ant-tree .ant-tree-treenode-selected {
+  background-color: #f5f6fa;
+}
+
+.ant-tree-indent-unit {
+  width: 8px;
+}
+
+.ant-tree .ant-tree-node-content-wrapper:hover,
+.ant-tree .ant-tree-node-content-wrapper.ant-tree-node-selected {
+  background: none;
+}
+
+.tree-leaf {
+  display: flex;
+  align-items: center;
+}
