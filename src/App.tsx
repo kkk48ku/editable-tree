@@ -10,7 +10,13 @@ import IconCreate from './assets/icon-create.svg'
 
 import './styles/App.css'
 
-const App = () => {
+interface IProps {
+  onEdit?: (value: string, id: Key) => void
+  onCreate?: (value: string, parentId: Key) => void
+  onDelete?: (id: Key) => void
+}
+
+const App = ({ onEdit, onCreate, onDelete }: IProps) => {
   const [isInputShow, toggleInputShow] = useState(false)
   const [lineList, setLineList] = useState<ILeafNode[]>([])
   const [treeList, setTreeList] = useState<ILeafNode[]>([])
@@ -64,22 +70,25 @@ const App = () => {
     handleExpand([...expandedKeys, key])
   }
 
-  const handleLeafDelete = (key: Key) => {
-    message.success(`成功删除节点${key}`)
-  }
-
-  const handleEdit = (value: string, key: Key) => {
+  const handleLeafEdit = (value: string, key: Key) => {
     value
       ? message.success(`value:${value}, id:${key}`)
       : message.warn(`value为空`)
     toggleLeafEdit(key, false)
+    onEdit && onEdit(value, key)
   }
 
-  const handleCreate = (value: string, parentId: Key) => {
+  const handleLeafCreate = (value: string, parentId: Key) => {
     value
       ? message.success(`value:${value}, parentId:${parentId}`)
       : message.warn(`value为空`)
     toggleLeafCreate(parentId, false)
+    onCreate && onCreate(value, parentId)
+  }
+
+  const handleLeafDelete = (key: Key) => {
+    message.success(`成功删除节点${key}`)
+    onDelete && onDelete(key)
   }
 
   const handleTreeNodeSelect = (selectedKeys: (string | number)[]) => {
@@ -137,10 +146,10 @@ const App = () => {
           ref={inputNode}
           placeholder="请输入小组名"
           onPressEnter={({ currentTarget }) => {
-            handleEdit(currentTarget.value, leaf.key)
+            handleLeafEdit(currentTarget.value, leaf.key)
           }}
           onBlur={({ currentTarget }) => {
-            handleEdit(currentTarget.value, leaf.key)
+            handleLeafEdit(currentTarget.value, leaf.key)
           }}
         />
       ),
@@ -156,10 +165,10 @@ const App = () => {
             <Input
               ref={inputNode}
               onBlur={({ currentTarget }) => {
-                handleCreate(currentTarget.value, parentId)
+                handleLeafCreate(currentTarget.value, parentId)
               }}
               onPressEnter={({ currentTarget }: any) => {
-                handleCreate(currentTarget.value, parentId)
+                handleLeafCreate(currentTarget.value, parentId)
               }}
             />
           ),
