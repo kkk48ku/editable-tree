@@ -158,8 +158,9 @@ const EditableTree = ({
       ) : (
         <Input
           id={INPUT_ID}
+          maxLength={8}
           ref={inputNode}
-          placeholder="请输入小组名"
+          placeholder="输入限制为8个字符"
           onPressEnter={({ currentTarget }) => {
             handleLeafEdit(currentTarget.value, leaf.key)
           }}
@@ -178,7 +179,9 @@ const EditableTree = ({
           key: idx - 1000000,
           title: (
             <Input
+              maxLength={8}
               id={INPUT_ID}
+              placeholder="输入限制为8个字符"
               ref={inputNode}
               onBlur={({ currentTarget }) => {
                 handleLeafCreate(currentTarget.value, parentId)
@@ -194,7 +197,7 @@ const EditableTree = ({
   }
 
   return (
-    <div className="App">
+    <div className="container-editable-tree">
       <Tree
         {...props}
         blockNode
