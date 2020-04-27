@@ -1,16 +1,17 @@
 import React, { useEffect, useState, Key, useCallback } from 'react'
-import { Tree, Input, message } from 'antd'
+import { Tree, Input } from 'antd'
+import { TreeProps } from 'antd/lib/tree'
+import { translateDataToTree, isNotEmptyArray } from './library/utils'
 
-import response from './list'
-import { ILeafNode } from './type/type'
-import { translateDataToTree } from './library/utils'
+import { ILeafNode, IBaseNode } from './type/type'
 import IconEdit from './assets/icon-edit.svg'
 import IconDelete from './assets/icon-delete.svg'
 import IconCreate from './assets/icon-create.svg'
 
 import './styles/App.css'
 
-interface IProps {
+interface IEditableTree {
+  list: IBaseNode[]
   onEdit?: (value: string, id: Key) => void
   onCreate?: (value: string, parentId: Key) => void
   onDelete?: (id: Key) => void
@@ -18,25 +19,36 @@ interface IProps {
 
 const INPUT_ID = 'inputId'
 
-const App = ({ onEdit, onCreate, onDelete }: IProps) => {
-  const [isInputShow, toggleInputShow] = useState(false)
+const EditableTree = ({
+  list,
+  onEdit,
+  onCreate,
+  onDelete,
+  expandedKeys = [],
+  selectedKeys = [],
+  autoExpandParent = true,
+  ...props
+}: IEditableTree & TreeProps) => {
+  const [isInputShow, toggleInputShow] = useState(true)
   const [lineList, setLineList] = useState<ILeafNode[]>([])
   const [treeList, setTreeList] = useState<ILeafNode[]>([])
-  const [expandedKeys, setExpandedKeys] = useState<Key[]>([])
-  const [selectedKeys, setSelectedKeys] = useState<Key[]>([])
-  const [autoExpandParent, setAutoExpandParent] = useState(true)
+  const [expandKeys, setExpandKeys] = useState<Key[]>(expandedKeys)
+  const [selectKeys, setSelectKeys] = useState<Key[]>(selectedKeys)
+  const [autoExpand, setAutoExpand] = useState(autoExpandParent)
 
   useEffect(() => {
-    const lineList: ILeafNode[] = response.map((item) => ({
-      ...item,
-      key: item.id,
-      title: item.name,
-      isCreate: false,
-      isEdit: false,
-      children: []
-    }))
+    const lineList: ILeafNode[] = isNotEmptyArray(list)
+      ? list.map((item) => ({
+          ...item,
+          key: item.id,
+          title: item.name,
+          isCreate: false,
+          isEdit: false,
+          children: []
+        }))
+      : []
     setLineList(lineList)
-  }, [])
+  }, [list])
 
   useEffect(() => {
     const list = JSON.parse(JSON.stringify(lineList))
@@ -69,27 +81,20 @@ const App = ({ onEdit, onCreate, onDelete }: IProps) => {
     }))
     setLineList(list)
     toggleInputShow(isCreate)
-    handleExpand([...expandedKeys, key])
+    handleExpand([...expandKeys, key])
   }
 
   const handleLeafEdit = (value: string, key: Key) => {
-    value
-      ? message.success(`value:${value}, id:${key}`)
-      : message.warn(`value为空`)
     toggleLeafEdit(key, false)
     onEdit && onEdit(value, key)
   }
 
   const handleLeafCreate = (value: string, parentId: Key) => {
-    value
-      ? message.success(`value:${value}, parentId:${parentId}`)
-      : message.warn(`value为空`)
     toggleLeafCreate(parentId, false)
     onCreate && onCreate(value, parentId)
   }
 
   const handleLeafDelete = (key: Key) => {
-    message.success(`成功删除节点${key}`)
     onDelete && onDelete(key)
   }
 
@@ -100,13 +105,13 @@ const App = ({ onEdit, onCreate, onDelete }: IProps) => {
     const inputId: any = (info?.nativeEvent?.target as HTMLInputElement)?.id
     // 防止选中input所在的节点
     if (inputId !== INPUT_ID) {
-      setSelectedKeys(selectedKeys)
+      setSelectKeys(selectedKeys)
     }
   }
 
   const handleExpand = (expandedKeys: Key[]) => {
-    setExpandedKeys([...new Set(expandedKeys)])
-    setAutoExpandParent(false)
+    setExpandKeys([...new Set(expandedKeys)])
+    setAutoExpand(false)
   }
 
   const renderTree: any = (
@@ -191,16 +196,17 @@ const App = ({ onEdit, onCreate, onDelete }: IProps) => {
   return (
     <div className="App">
       <Tree
+        {...props}
         blockNode
-        expandedKeys={expandedKeys}
-        selectedKeys={selectedKeys}
+        selectedKeys={selectKeys}
+        expandedKeys={expandKeys}
         treeData={renderTree(treeList)}
         onExpand={handleExpand}
         onSelect={handleTreeNodeSelect}
-        autoExpandParent={autoExpandParent}
+        autoExpandParent={autoExpand}
       />
     </div>
   )
 }
 
-export default App
+export default EditableTree
