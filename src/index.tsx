@@ -4,7 +4,6 @@ import EditableTree from './EditableTree'
 import { message, Input } from 'antd'
 
 import './styles/index.css'
-import { ILeafNode } from './type/type'
 
 const App = () => {
   const [dataList, setDataList] = useState([
@@ -150,14 +149,17 @@ const App = () => {
         }}
       />
       <Input.TextArea
+        rows={27}
         className="data-input"
         value={JSON.stringify(dataList)}
-        rows={27}
+        onChange={({ currentTarget }) => {
+          try {
+            setDataList(JSON.parse(currentTarget.value))
+          } catch (error) {}
+        }}
       />
     </div>
   )
 }
-
-// const dataList =
 
 ReactDOM.render(<App />, document.getElementById('root'))
