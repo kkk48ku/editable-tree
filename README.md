@@ -1,4 +1,4 @@
-# 基于 antd-design 、 react-hooks 及 typescript 实现一个可编辑的 Tree
+# 基于 antd-design 、 react-hooks 及 typescript 封装一个可编辑的 Tree
 
 ## 前言
 
@@ -12,17 +12,31 @@
 
 ## 准备工作
 
-1. 定义 `TreeNode` 数据 interface
+1. 与后端约定基本数据格式
+
+```javascript
+// TreeNode
+{
+  id:1,
+  name: '一级',
+  parentId: 0
+}
+```
+
+2. 定义 `ILeafNode`和 `IBaseNode` 数据 interface
 
 ```javascript
 // src/type/type.ts
 
 import { DataNode } from 'rc-tree/lib/interface'
 
-export interface ILeafNode extends DataNode {
+export interface IBaseNode {
   id: number
   name: string
   parentId: number
+}
+
+export interface ILeafNode extends DataNode, IBaseNode {
   isEdit: boolean
   isCreate: boolean
   children: ILeafNode[]
@@ -30,7 +44,7 @@ export interface ILeafNode extends DataNode {
 
 ```
 
-2. 实现一个 list 转化为 treeList 的函数，直接上代码：
+3. 实现一个 list 转化为 treeList 的函数，直接上代码：
 
 ```javascript
 // src/library/utils.ts
@@ -38,15 +52,9 @@ export interface ILeafNode extends DataNode {
 export const translateDataToTree = <T extends ILeafNode>(
   data: Array<T>
 ): Array<T> => {
-  const parents = data.reduce((list: Array<T>, item) => {
-    item.parentId === 0 && list.push(item)
-    return list
-  }, [])
+  const parents = data.filter((item: T) => !item.parentId)
 
-  const children = data.reduce((list: Array<T>, item) => {
-    item.parentId !== 0 && list.push(item)
-    return list
-  }, [])
+  const children = data.filter((item: T) => item.parentId > 0)
 
   const translator = (parents: Array<T>, children: Array<T>) => {
     parents.forEach((parent) => {
@@ -69,108 +77,184 @@ export const translateDataToTree = <T extends ILeafNode>(
 
 ```
 
-3. 与后端约定基本数据格式
+## 难点及解决方案
 
-```javascript
-// TreeNode
-{
-  id:1,
-  name: '一级',
-  parentId: 0
-}
-```
+1. 控制子节点编辑输入框和节点新建输入框的显示隐藏
 
-## 项目难点及解决方案
+- 解决方案：维护一个`lineList`和一个`treeList`，控制 lineList 每一项的 `isCreate` 和 `isEdit` 属性。使用 `useEffect` 监听 `lineList` 改变并将其转换为 `treeList`。
+`treeList` 改变后，tree 节点重新渲染。
+我们就根据每一个节点的`isCreate`和`isEdit`属性控制是否显示输入框。
 
-- 控制子节点编辑输入框和节点新建输入框的显示隐藏
-  解决方案：维护一个`lineList`和一个`treeList`，控制 lineList 每一项的 `isCreate` 和 `isEdit` 属性。使用 `useEffect` 监听 `lineList` 改变并将其转换为 `treeList`。
+  ```javascript
+  useEffect(() => {
+    const lineList: ILeafNode[] = isNotEmptyArray(list)
+      ? list.map((item) => ({
+          ...item,
+          key: item.id,
+          title: item.name,
+          isCreate: false,
+          isEdit: false,
+          children: []
+        }))
+      : []
+    setLineList(lineList)
+    }, [list])
 
-```javascript
-useEffect(() => {
-  const lineList: ILeafNode[] = response.map((item) => ({
-    ...item,
-    key: item.id,
-    title: item.name,
-    isCreate: false,
-    isEdit: false,
-    children: []
-  }))
-  setLineList(lineList)
-}, [])
+  useEffect(() => {
+    const list = JSON.parse(JSON.stringify(lineList))
+    const treeList = translateDataToTree(list)
+    setTreeList(treeList)
+  }, [lineList])
 
-useEffect(() => {
-  const list = JSON.parse(JSON.stringify(lineList))
-  const treeList = translateDataToTree(list)
-  setTreeList(treeList)
-}, [lineList])
-
-const toggleLeafEdit = (key: Key, isEdit: boolean) => {
-  const list = lineList.map((leaf) => ({
-    ...leaf,
-    isCreate: false,
-    isEdit: leaf.key === key ? isEdit : false
-  }))
-  setLineList(list)
-  toggleInputShow(isEdit)
-}
-
-const toggleLeafCreate = (key: Key, isCreate: boolean) => {
-  const list = lineList.map((leaf) => ({
-    ...leaf,
-    isEdit: false,
-    isCreate: leaf.key === key ? isCreate : false
-  }))
-  setLineList(list)
-  toggleInputShow(isCreate)
-  handleExpand([...expandedKeys, key])
-}
-
-<Tree
-  treeData={renderTree(treeList)}
-/>
-
-```
-
-- 获取新插入的 input 节点使其 focus
-  解决方案：一开始这里我是使用 useRef + settimeout 延迟 200ms 后 focus 的方案，但是因为 settimeout 的不确定性，我决定采用其他方案。
-
-这里采用了官方推荐的方案：
-
-```javascript
-const inputNode = useCallback(
-  (input) => {
-    isInputShow && input && input.focus()
-  },
-  [isInputShow]
-)
-
-<Input ref={inputNode} />
-```
-
-- 点击按钮或输入框防止误选节点
-
-解决方案：
-
-1. 输入框通过判断 onSelect 的第二个参数对象里面的`node`，通过自己定义的标志判断是不是 input，如果是`input`防止被选中
-
-```javascript
-const INPUT_ID = 'inputId'
-
-const handleTreeNodeSelect = (
-  selectedKeys: (string | number)[],
-  info?: { nativeEvent: MouseEvent }
-) => {
-  const inputId: any = (info?.nativeEvent?.target as HTMLInputElement)?.id
-  // 防止选中input所在的节点
-  if (inputId !== INPUT_ID) {
-    setSelectedKeys(selectedKeys)
+  const toggleLeafEdit = (key: Key, isEdit: boolean) => {
+    const list = lineList.map((leaf) => ({
+      ...leaf,
+      isCreate: false,
+      isEdit: leaf.key === key ? isEdit : false
+    }))
+    setLineList(list)
+    toggleInputShow(isEdit)
   }
+
+  const toggleLeafCreate = (key: Key, isCreate: boolean) => {
+    const list = lineList.map((leaf) => ({
+      ...leaf,
+      isEdit: false,
+      isCreate: leaf.key === key ? isCreate : false
+    }))
+    setLineList(list)
+    toggleInputShow(isCreate)
+    handleExpand([...expandedKeys, key])
+  }
+
+  <Tree
+    treeData={renderTree(treeList)}
+  />
+
+  ```
+
+2. 获取新插入的 input 并使其 focus
+
+- 解决方案：一开始这里我是使用 useRef 的方案，但是 ref 为一个对象时无法监听到 ref 的变化，所以我决定采用其他方案。
+
+    这里采用了官方推荐的方案 [传送门](https://reactjs.bootcss.com/docs/hooks-faq.html#how-can-i-measure-a-dom-node)：
+
+    ```javascript
+    const [isInputShow,toggleInputShow] = useState(false)
+
+    const inputNode = useCallback(
+      (input) => {
+        isInputShow && input && input.focus()
+      },
+      [isInputShow]
+    )
+
+    <Input ref={inputNode} />
+    ```
+
+3. 点击按钮或输入框防止误选节点
+
+- 解决方案：
+
+  - 输入框通过判断 onSelect 的第二个参数对象里面的`node`，通过自己定义的标志判断是不是 input，如果是`input`防止被选中
+
+  ```javascript
+  const INPUT_ID = 'inputId'
+
+  const handleTreeNodeSelect = (
+    selectedKeys: (string | number)[],
+    info?: { nativeEvent: MouseEvent }
+  ) => {
+    const inputId: any = (info?.nativeEvent?.target as HTMLInputElement)?.id
+    // 防止选中input所在的节点
+    if (inputId !== INPUT_ID) {
+      setSelectedKeys(selectedKeys)
+    }
+  }
+
+  <Input id={INPUT_ID} />
+  ```
+
+  - 操作按钮通过`event.stopPropagation()`阻止点击事件冒泡
+
+4. 处理传入的 props 和自己封装用到的 props 的关系
+
+- 因为我们的封装是基于 `ant-tree` 实现的，不可能不让开发者使用别的 api，我们可以通过传递 props 的方案，将自己需要的属性初始化为开发者传入的属性或者默认值。其他值直接传递给 `Tree` 组件。但是需要注意的是，要提示开发者不能再传递 `treeData` 属性了，而是传递 `list` 属性由组件内部处理。
+
+```javascript
+const EditableTree = ({
+    list,
+    onEdit,
+    onCreate,
+    // @ts-ignore
+    treeData,
+    onDelete,
+    expandedKeys = [],
+    selectedKeys = [],
+    autoExpandParent = true,
+    ...props
+}: IEditableTree & ITreeProps) => {
+  const [expandKeys, setExpandKeys] = useState<Key[]>(expandedKeys)
+  const [selectKeys, setSelectKeys] = useState<Key[]>(selectedKeys)
+  const [autoExpand, setAutoExpand] = useState(autoExpandParent)
+
+  return <Tree
+  {...props}
+  selectedKeys={selectKeys}
+  expandedKeys={expandKeys}
+  treeData={renderTree(treeList)}
+  onExpand={handleExpand}
+  onSelect={handleTreeNodeSelect}
+  autoExpandParent={autoExpand}
+/>
 }
 
-<Input id={INPUT_ID} />
 ```
 
-  2. 操作按钮通过`event.stopPropagation()`阻止冒泡
+- 那如果开发者传了怎么办呢，有两种处理办法：
+  - typescript 约束提示
+
+  ```javascript
+  interface IEditableTree {
+  list: IBaseNode[]
+  onEdit?: (value: string, id: Key) => void
+  onCreate?: (value: string, parentId: Key) => void
+  onDelete?: (id: Key) => void
+  }
+
+  type ITreeProps = NeverPick<TreeProps, 'treeData'>
+
+  type NeverPick<T, U> = {
+    [P in Exclude<keyof T, U>]?: T[P]
+  }
+
+  const EditableTree = ({ ...props }: IEditableTree & ITreeProps) => {
+    return null
+  }
+  ```
+
+  这样开发者再传递`treeData`属性，我们的编辑器就会做出提示，treeData 不是可接受的属性。
+
+  - 从 props 中解构出 treeData 然后不做处理
+
+  ```javascript
+  const EditableTree = ({
+    list,
+    onEdit,
+    onCreate,
+    // @ts-ignore
+    treeData,
+    onDelete,
+    expandedKeys = [],
+    selectedKeys = [],
+    autoExpandParent = true,
+    ...props
+  }: IEditableTree & ITreeProps) => {
+    return null
+  }
+  ```
+
+  这里推荐两种方法一起采取。
 
 ## 代码实现
 
@@ -181,84 +265,102 @@ const handleTreeNodeSelect = (
 ```javascript
 const renderTree: any = (
     list: ILeafNode[],
-    idx: number,
+    idx: number, // 可以判断层级
     parentId: Key,
-    isCreate: boolean
-  ) => {
-    const tree = list.map((leaf) => ({
-      key: leaf.key,
-      title: !leaf.isEdit ? (
-        <div className="tree-leaf">
-          <span>{leaf.name}</span>
-          <span className="action">
-            <img
-              className="icon"
-              src={IconCreate}
-              alt="＋"
-              onClick={(e) => {
-                e.stopPropagation()
-                toggleLeafCreate(leaf.key, true)
-              }}
-            />
-            <img
-              className="icon"
-              src={IconEdit}
-              alt="^"
-              onClick={(e) => {
-                e.stopPropagation()
-                toggleLeafEdit(leaf.key, true)
-              }}
-            />
-            <img
-              className="icon"
-              src={IconDelete}
-              alt="×"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleLeafDelete(leaf.key)
-              }}
-            />
-          </span>
-        </div>
-      ) : (
-        <Input
-          id={INPUT_ID}
-          ref={inputNode}
-          placeholder="请输入小组名"
-          onPressEnter={({ currentTarget }) => {
-            handleLeafEdit(currentTarget.value, leaf.key)
-          }}
-          onBlur={({ currentTarget }) => {
-            handleLeafEdit(currentTarget.value, leaf.key)
-          }}
-        />
-      ),
-      children: leaf.children
-        ? renderTree(leaf.children, idx + 1, leaf.key, leaf.isCreate)
-        : renderTree([], idx + 1, leaf.key, leaf.isCreate)
-    }))
+    isCreate: boolean // 是否是新增节点
+) => {
+  const tree = list.map((leaf) => ({
+    key: leaf.key,
+    title: !leaf.isEdit ? (
+      <div className="tree-leaf">
+        <span>{leaf.name}</span>
+        <span className="action">
+          <img
+            className="icon"
+            src={IconCreate}
+            alt="增"
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleLeafCreate(leaf.key, true)
+            }}
+          />
+          <img
+            className="icon"
+            src={IconEdit}
+            alt="改"
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleLeafEdit(leaf.key, true)
+              setInputValue(leaf.name)
+            }}
+          />
+          <img
+            className="icon"
+            src={IconDelete}
+            alt="删"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleLeafDelete(leaf.key)
+            }}
+          />
+        </span>
+      </div>
+    ) : (
+      <Input
+        id={INPUT_ID}
+        maxLength={8}
+        ref={inputNode}
+        value={inputValue}
+        placeholder="输入限制为8个字符"
+        suffix={<span>{inputValue.length}/8</span>}
+        onChange={({ currentTarget }) => {
+          const val = currentTarget.value
+          setInputValue(val)
+          toggleUpdated(val !== leaf.name)
+        }}
+        onPressEnter={({ currentTarget }) => {
+          handleLeafEdit(currentTarget.value, leaf.key)
+        }}
+        onBlur={({ currentTarget }) => {
+          handleLeafEdit(currentTarget.value, leaf.key)
+        }}
+      />
+    ),
+    children: leaf.children
+      ? renderTree(leaf.children, idx + 1, leaf.key, leaf.isCreate)
+      : renderTree([], idx + 1, leaf.key, leaf.isCreate)
+  }))
 
-    return isCreate
-      ? tree.concat({
-          key: idx - 1000000,
-          title: (
-            <Input
-              id={INPUT_ID}
-              ref={inputNode}
-              onBlur={({ currentTarget }) => {
-                handleLeafCreate(currentTarget.value, parentId)
-              }}
-              onPressEnter={({ currentTarget }: any) => {
-                handleLeafCreate(currentTarget.value, parentId)
-              }}
-            />
-          ),
-          children: null
-        })
-      : tree
-  }
+  return isCreate
+    ? tree.concat({
+        key: idx - 1000000,
+        title: (
+          <Input
+            maxLength={8}
+            id={INPUT_ID}
+            ref={inputNode}
+            value={inputValue}
+            placeholder="输入限制为8个字符"
+            suffix={<span>{inputValue.length}/8</span>}
+            onChange={({ currentTarget }) => {
+              setInputValue(currentTarget.value)
+            }}
+            onBlur={({ currentTarget }) => {
+              handleLeafCreate(currentTarget.value, parentId)
+            }}
+            onPressEnter={({ currentTarget }: any) => {
+              handleLeafCreate(currentTarget.value, parentId)
+            }}
+          />
+        ),
+        children: null
+      })
+    : tree
+}
 ```
 
 ## 最后
+
+线上体验地址：[传送门](http://test.zuoning327.com:3000)，欢迎体验
 
 代码放在 github，地址是 [editable-tree](https://github.com/BovineBoy/editable-tree)，欢迎参考，如果对你有所帮助，希望可以点个star，如果有疑问欢迎在[这里](https://github.com/BovineBoy/editable-tree/issues)提issue，或留言讨论。

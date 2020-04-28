@@ -1,7 +1,11 @@
+.container-demo {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .data-input {
-  position: absolute;
-  right: 20%;
-  top: 50%;
-  transform: translate(0, -50%);
   width: 400px;
+  margin-left: 100px;
 }

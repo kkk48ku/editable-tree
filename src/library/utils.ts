@@ -6,15 +6,9 @@ export const isNotEmptyArray = <T = any>(data: Array<T>) =>
 export const translateDataToTree = <T extends ILeafNode>(
   data: Array<T>
 ): Array<T> => {
-  const parents = data.reduce((list: Array<T>, item) => {
-    item.parentId === 0 && list.push(item)
-    return list
-  }, [])
+  const parents = data.filter((item: T) => !item.parentId)
 
-  const children = data.reduce((list: Array<T>, item) => {
-    item.parentId !== 0 && list.push(item)
-    return list
-  }, [])
+  const children = data.filter((item: T) => item.parentId > 0)
 
   const translator = (parents: Array<T>, children: Array<T>) => {
     parents.forEach((parent) => {

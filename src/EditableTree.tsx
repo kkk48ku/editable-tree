@@ -2,6 +2,7 @@ import React, { useEffect, useState, Key, useCallback } from 'react'
 import { Tree, Input } from 'antd'
 import { TreeProps } from 'antd/lib/tree'
 import { translateDataToTree, isNotEmptyArray } from './library/utils'
+import { DataNode } from 'rc-tree/lib/interface'
 
 import { ILeafNode, IBaseNode } from './type/type'
 import IconEdit from './assets/icon-edit.svg'
@@ -17,24 +18,34 @@ interface IEditableTree {
   onDelete?: (id: Key) => void
 }
 
+type ITreeProps = NeverPick<TreeProps, 'treeData'>
+
+type NeverPick<T, U> = {
+  [P in Exclude<keyof T, U>]?: T[P]
+}
+
 const INPUT_ID = 'inputId'
 
 const EditableTree = ({
   list,
   onEdit,
   onCreate,
+  // @ts-ignore
+  treeData,
   onDelete,
   expandedKeys = [],
   selectedKeys = [],
   autoExpandParent = true,
   ...props
-}: IEditableTree & TreeProps) => {
+}: IEditableTree & ITreeProps) => {
   const [isInputShow, toggleInputShow] = useState(true)
+  const [isUpdated, toggleUpdated] = useState(false)
   const [lineList, setLineList] = useState<ILeafNode[]>([])
   const [treeList, setTreeList] = useState<ILeafNode[]>([])
   const [expandKeys, setExpandKeys] = useState<Key[]>(expandedKeys)
   const [selectKeys, setSelectKeys] = useState<Key[]>(selectedKeys)
   const [autoExpand, setAutoExpand] = useState(autoExpandParent)
+  const [inputValue, setInputValue] = useState('')
 
   useEffect(() => {
     const lineList: ILeafNode[] = isNotEmptyArray(list)
@@ -69,6 +80,7 @@ const EditableTree = ({
       isCreate: false,
       isEdit: leaf.key === key ? isEdit : false
     }))
+    toggleUpdated(false)
     setLineList(list)
     toggleInputShow(isEdit)
   }
@@ -86,11 +98,13 @@ const EditableTree = ({
 
   const handleLeafEdit = (value: string, key: Key) => {
     toggleLeafEdit(key, false)
-    onEdit && onEdit(value, key)
+    setInputValue('')
+    isUpdated && onEdit && onEdit(value, key)
   }
 
   const handleLeafCreate = (value: string, parentId: Key) => {
     toggleLeafCreate(parentId, false)
+    setInputValue('')
     onCreate && onCreate(value, parentId)
   }
 
@@ -129,7 +143,7 @@ const EditableTree = ({
             <img
               className="icon"
               src={IconCreate}
-              alt="＋"
+              alt="增"
               onClick={(e) => {
                 e.stopPropagation()
                 toggleLeafCreate(leaf.key, true)
@@ -138,16 +152,17 @@ const EditableTree = ({
             <img
               className="icon"
               src={IconEdit}
-              alt="^"
+              alt="改"
               onClick={(e) => {
                 e.stopPropagation()
                 toggleLeafEdit(leaf.key, true)
+                setInputValue(leaf.name)
               }}
             />
             <img
               className="icon"
               src={IconDelete}
-              alt="×"
+              alt="删"
               onClick={(e) => {
                 e.stopPropagation()
                 handleLeafDelete(leaf.key)
@@ -160,7 +175,14 @@ const EditableTree = ({
           id={INPUT_ID}
           maxLength={8}
           ref={inputNode}
+          value={inputValue}
           placeholder="输入限制为8个字符"
+          suffix={<span>{inputValue.length}/8</span>}
+          onChange={({ currentTarget }) => {
+            const val = currentTarget.value
+            setInputValue(val)
+            toggleUpdated(val !== leaf.name)
+          }}
           onPressEnter={({ currentTarget }) => {
             handleLeafEdit(currentTarget.value, leaf.key)
           }}
@@ -181,8 +203,13 @@ const EditableTree = ({
             <Input
               maxLength={8}
               id={INPUT_ID}
-              placeholder="输入限制为8个字符"
               ref={inputNode}
+              value={inputValue}
+              placeholder="输入限制为8个字符"
+              suffix={<span>{inputValue.length}/8</span>}
+              onChange={({ currentTarget }) => {
+                setInputValue(currentTarget.value)
+              }}
               onBlur={({ currentTarget }) => {
                 handleLeafCreate(currentTarget.value, parentId)
               }}
