@@ -112,21 +112,19 @@ const App = () => {
 
   const deletedList = (parentId: Key) => {
     const list = JSON.parse(JSON.stringify(dataList))
-    const deleteLeaf = (id: Key) => {
-      console.log('list: ', id, JSON.stringify(list))
-      list.forEach((leaf: ILeafNode, index: number) => {
-        const isLeafOrChild = id === leaf?.id || id === leaf.parentId
-        if (isLeafOrChild) {
-          list.splice(index, 1)
-          console.log('leaf.id: ', leaf.id)
-          deleteLeaf(leaf.id)
-        }
-      })
+    const arr = [parentId]
+    for (let i = 0; i < list.length; i++) {
+      const isLeafOrChild =
+        arr.includes(list[i].id) || arr.includes(list[i].parentId)
+
+      if (isLeafOrChild) {
+        arr.push(list[i].id)
+        list.splice(i, 1)
+        i--
+      }
     }
-    deleteLeaf(parentId)
     return list
   }
-
   return (
     <div className="container-demo">
       <EditableTree
