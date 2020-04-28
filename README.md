@@ -6,6 +6,8 @@
 
 先看效果👇：
 
+线上体验地址：[传送门](http://test.zuoning327.com:3000)，欢迎体验
+
 ![tree](./tree.gif)
 
 接下来我们开始吧。
@@ -360,7 +362,5 @@ const renderTree: any = (
 ```
 
 ## 最后
-
-线上体验地址：[传送门](http://test.zuoning327.com:3000)，欢迎体验
 
 代码放在 github，地址是 [editable-tree](https://github.com/BovineBoy/editable-tree)，欢迎参考，如果对你有所帮助，希望可以点个star，如果有疑问欢迎在[这里](https://github.com/BovineBoy/editable-tree/issues)提issue，或留言讨论。

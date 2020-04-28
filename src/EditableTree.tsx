@@ -2,7 +2,6 @@ import React, { useEffect, useState, Key, useCallback } from 'react'
 import { Tree, Input } from 'antd'
 import { TreeProps } from 'antd/lib/tree'
 import { translateDataToTree, isNotEmptyArray } from './library/utils'
-import { DataNode } from 'rc-tree/lib/interface'
 
 import { ILeafNode, IBaseNode } from './type/type'
 import IconEdit from './assets/icon-edit.svg'
