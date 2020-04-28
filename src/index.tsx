@@ -1,7 +1,7 @@
 import React, { useState, Key } from 'react'
 import ReactDOM from 'react-dom'
 import EditableTree from './EditableTree'
-import { message } from 'antd'
+import { message, Input } from 'antd'
 
 import './styles/index.css'
 import { ILeafNode } from './type/type'
@@ -150,6 +150,11 @@ const App = () => {
           message.success(`成功删除节点${id}`)
           handleDelete(id)
         }}
+      />
+      <Input.TextArea
+        className="data-input"
+        value={JSON.stringify(dataList)}
+        rows={27}
       />
     </div>
   )
