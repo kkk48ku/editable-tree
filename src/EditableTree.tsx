@@ -172,11 +172,11 @@ const EditableTree = ({
       ) : (
         <Input
           id={INPUT_ID}
-          maxLength={8}
+          maxLength={10}
           ref={inputNode}
           value={inputValue}
-          placeholder="输入限制为8个字符"
-          suffix={<span>{inputValue.length}/8</span>}
+          placeholder="输入限制为10个字符"
+          suffix={<span>{inputValue.length}/10</span>}
           onChange={({ currentTarget }) => {
             const val = currentTarget.value
             setInputValue(val)

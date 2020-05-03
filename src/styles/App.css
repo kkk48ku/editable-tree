@@ -1,16 +1,18 @@
 @import '~antd/dist/antd.css';
 
 .container-editable-tree {
-  width: 250px;
+  width: 200px;
   height: 600px;
   box-shadow: 2px 8px 30px 0 rgba(115, 119, 139, 0.2);
 }
 
 .ant-tree-list {
   padding: 16px 0;
+  overflow-x: hidden;
 }
 
 .ant-tree .ant-tree-treenode {
+  position: relative;
   display: flex;
   align-items: center;
   height: 36px;
@@ -18,13 +20,25 @@
   color: #31415f;
 }
 
-.tree-leaf .action {
-  margin-left: 16px;
-  display: none;
+.ant-tree .ant-tree-treenode:hover {
+  background-color: #f5f6fa;
 }
 
-.tree-leaf:hover .action {
-  display: block;
+.ant-tree .ant-tree-treenode:hover .tree-leaf .action {
+  margin-right: 0;
+}
+
+.tree-leaf .action {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 36px;
+  line-height: 34px;
+  padding: 0 10px;
+  margin-right: -300px;
+  transition: margin .3s ease-in-out;
+  box-shadow: -2px 0 4px 0 rgba(0, 21, 41, 0.08);
+  background-color: #f7f8fb;
 }
 
 .tree-leaf .action .icon {
@@ -49,6 +63,8 @@
 }
 
 .tree-leaf {
-  display: flex;
-  align-items: center;
+  width: 136px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
